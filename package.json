@@ -13,6 +13,7 @@
   "dependencies": {
     "bocho_amigo_api": "file:",
     "express": "^5.1.0",
+    "mongoose": "^8.15.0",
     "uuid": "^11.1.0"
   }
 }
