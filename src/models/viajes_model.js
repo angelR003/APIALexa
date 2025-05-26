@@ -1,15 +1,15 @@
-// src/models/viaje_model.js
+// src/models/viajes_model.js
 
-class Viaje {
-    constructor({ id, nombre_conductor, destino, hora, pasajero, estatus = 'activo', tipo = 'viaje' }) {
-        this.id = id; // identificador único
-        this.nombre_conductor = nombre_conductor;
-        this.destino = destino;
-        this.hora = hora;
-        this.pasajero = pasajero;
-        this.estatus = estatus; // activo, cancelado, pendiente
-        this.tipo = tipo; // viaje o aviso
-    }
-}
+const mongoose = require('mongoose');
 
-module.exports = Viaje;
+const viajeSchema = new mongoose.Schema({
+    id: { type: String, required: true },
+    nombre_conductor: { type: String, required: true },
+    destino: { type: String, required: true },
+    hora: { type: String, required: true },
+    pasajero: { type: String, required: true },
+    estatus: { type: String, default: 'activo' },
+    tipo: { type: String, default: 'viaje' }
+});
+
+module.exports = mongoose.model('Viaje', viajeSchema);

@@ -1,68 +1,82 @@
 // src/controllers/viajes_controller.js
 
 const Viaje = require('../models/viajes_model');
-const viajes = require('../data/viajes_data');
 const { v4: uuidv4 } = require('uuid');
 
-// GET todos los viajes
-exports.getAllViajes = (req, res) => {
-    const activos = viajes.filter(v => v.estatus === 'activo');
-    res.json(activos);
+// GET todos los viajes activos
+exports.getAllViajes = async (req, res) => {
+    try {
+        const activos = await Viaje.find({ estatus: 'activo' });
+        res.json(activos);
+    } catch (err) {
+        res.status(500).json({ message: 'Error al obtener los viajes' });
+    }
 };
 
-// Nuevo: obtener viajes solo por ciudad/destino
-exports.getViajesPorCiudad = (req, res) => {
+// GET viajes por ciudad/destino
+exports.getViajesPorCiudad = async (req, res) => {
     const { destino } = req.params;
-    const filtrados = viajes.filter(
-        v => v.destino.toLowerCase() === destino.toLowerCase() && v.estatus === 'activo'
-    );
-    res.json(filtrados);
+    try {
+        const filtrados = await Viaje.find({
+            destino: { $regex: new RegExp(destino, 'i') },
+            estatus: 'activo'
+        });
+        res.json(filtrados);
+    } catch (err) {
+        res.status(500).json({ message: 'Error al buscar viajes por destino' });
+    }
 };
 
 // POST crear viaje
-exports.createViaje = (req, res) => {
+exports.createViaje = async (req, res) => {
     const { nombre_conductor, destino, hora, pasajero } = req.body;
-    const viaje = new Viaje({
-        id: uuidv4(),
-        nombre_conductor,
-        destino,
-        hora,
-        pasajero,
-        estatus: "activo",
-        tipo: "viaje"
-    });
-    viajes.push(viaje);
-    res.status(201).json(viaje);
+    try {
+        const viaje = new Viaje({
+            id: uuidv4(),
+            nombre_conductor,
+            destino,
+            hora,
+            pasajero
+        });
+        await viaje.save();
+        res.status(201).json(viaje);
+    } catch (err) {
+        res.status(500).json({ message: 'Error al crear el viaje' });
+    }
 };
 
 // PUT actualizar viaje
-exports.updateViaje = (req, res) => {
+exports.updateViaje = async (req, res) => {
     const { id } = req.params;
     const { destino, hora, pasajero, estatus, tipo } = req.body;
-    const viaje = viajes.find(v => v.id === id);
+    try {
+        const viaje = await Viaje.findOne({ id });
+        if (!viaje) return res.status(404).json({ message: 'Viaje no encontrado' });
 
-    if (!viaje) {
-        return res.status(404).json({ message: "Viaje no encontrado" });
+        if (destino) viaje.destino = destino;
+        if (hora) viaje.hora = hora;
+        if (pasajero) viaje.pasajero = pasajero;
+        if (estatus) viaje.estatus = estatus;
+        if (tipo) viaje.tipo = tipo;
+
+        await viaje.save();
+        res.json(viaje);
+    } catch (err) {
+        res.status(500).json({ message: 'Error al actualizar el viaje' });
     }
-
-    if (destino) viaje.destino = destino;
-    if (hora) viaje.hora = hora;
-    if (pasajero) viaje.pasajero = pasajero;
-    if (estatus) viaje.estatus = estatus;
-    if (tipo) viaje.tipo = tipo;
-
-    res.json(viaje);
 };
 
 // DELETE cancelar viaje
-exports.deleteViaje = (req, res) => {
+exports.deleteViaje = async (req, res) => {
     const { id } = req.params;
-    const index = viajes.findIndex(v => v.id === id);
+    try {
+        const viaje = await Viaje.findOne({ id });
+        if (!viaje) return res.status(404).json({ message: 'Viaje no encontrado' });
 
-    if (index === -1) {
-        return res.status(404).json({ message: "Viaje no encontrado" });
+        viaje.estatus = 'cancelado';
+        await viaje.save();
+        res.json({ message: 'Viaje cancelado', viaje });
+    } catch (err) {
+        res.status(500).json({ message: 'Error al cancelar el viaje' });
     }
-
-    viajes[index].estatus = "cancelado"; // solo se marca como cancelado
-    res.json({ message: "Viaje cancelado", viaje: viajes[index] });
 };
